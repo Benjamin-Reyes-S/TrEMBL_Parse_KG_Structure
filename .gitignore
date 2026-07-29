@@ -19,3 +19,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+*.xml
+*.csv
+/output-csv/
