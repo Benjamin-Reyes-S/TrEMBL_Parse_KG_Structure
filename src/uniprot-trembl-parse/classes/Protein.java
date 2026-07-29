@@ -6,8 +6,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class Protein {
     @JacksonXmlProperty
     public String accession;
+    public void getAccession(){
+        return accession
+    }
     @JacksonXmlProperty
     public String name;
+    public void getName(){
+        return name
+    }
     @JacksonXmlProperty(localName= "sequence") //because nested structure
     private ProteinSequence sequence;
 

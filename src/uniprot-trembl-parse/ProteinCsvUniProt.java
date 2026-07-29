@@ -1,32 +1,28 @@
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonProteinPropertyOrder({
-        "names",
+@JsonPropertyOrder({
         "accession",
-        "secondary_accessions",
-        "sequence",
-        "sequence_modified",
-        "sequence_precursor"
+        "names",
+        "sequence"
 })
-
 public class ProteinCsvRow {
-
-    @JsonProperty("names")
-    public String names;
 
     @JsonProperty("accession")
     public String accession;
 
-    @JsonProperty("secondary_accessions")
-    public String secondaryAccessions;
+    @JsonProperty("names")
+    public String names;
 
     @JsonProperty("sequence")
     public String sequence;
 
-    @JsonProperty("sequence_modified")
-    public String sequenceModified;
+    public ProteinCsvRow() {
+    }
 
-    @JsonProperty("sequence_precursor")
-    public String sequencePrecursor;
+    public ProteinCsvRow(String accession, String names, String sequence) {
+        this.accession = accession;
+        this.names = names;
+        this.sequence = sequence;
+    }
 }

@@ -42,32 +42,72 @@ public final class XmlToCsvConverter {
             );
         }
     }
-    void read(String[] args) {
+    public class EntryReader {
 
-        try (final GZIPInputStream stream =
-                    FileUtils.openGzip(filePath.toString())) {
+        private final Path filePath;
 
-                LOGGER.info(
-                    "Start streaming without features and citations for TrEMBL (0%)"
+        public EntryReader(Path filePath) {
+            this.filePath = filePath;
+        }
+
+        // Reads the compressed XML file and passes each Entry to entryConsumer.
+
+        public void read(Consumer<Entry> entryConsumer) {
+            // collect the organisms and Proteins
+            List<Protein> proteins= new ArrayList<>();
+            Set<Organisms> organisms= new HashSet<>();
+            //collect mapping ids
+            Map<String, List<String>> proteinOrganismMapping = new HashMap<>();
+
+            try (GZIPInputStream stream =
+                        FileUtils.openGzip(filePath.toString())) {
+                LOGGER.info("Start processing Entries");
+
+                FileUtils.streamXmlList(
+                        stream,
+                        Entry.class,
+                        entry -> {
+                            if (entry != null) {
+                                entryConsumer.accept(entry entry);
+                                protein.parseProtein(Entry entry) -> {proteins //store object in proteins list
+                                }
+                                organism.parseOrganism(Entry entry) -> { organisms; //store objects in organims Hashset
+
+                                    for (Organism organism : entry.getOrganisms()) {
+                                        String proteinId = protein.getAccession();
+                                        String organismId = organism.getDbReference().getId();
+
+                                        proteinOrganismMapping
+                                                .computeIfAbsent(proteinId, key -> new HashSet<>())
+                                                .add(organismId);
+                                    
+                                }
+                            }
+                        }
                 );
 
-                FileUtils.streamXmlList(stream, Entry.class, entry -> {
-                    exportEntry(graph, entry);
-
-                });
-            };
             } catch (IOException | XMLStreamException e) {
-                throw new ExporterFormatException(e);
-    }
-    // parse 
-    parse(Entry entry ){
-        Protein protein = new Protein();
-        Set<Organism> organisms = new HashSet<>();
-        Set<Citation> citations = new HashSet<>();
-    
-        
+                throw new ExporterFormatException(
+                        "Could not read XML file: " + filePath, e
+                );
+            }
+        }
     }
 
+    // parse 
+    public List<ProteinCsvRow> transformProteins(
+            Collection<? extends Protein> proteins) {
+
+        return proteins.stream()
+                .map(protein -> new ProteinCsvRow(
+                        protein.getAccession(),
+                        protein.getName(),
+                        protein.getSequence()
+                ))
+                .toList();
     }
+
+}
+
 
 
