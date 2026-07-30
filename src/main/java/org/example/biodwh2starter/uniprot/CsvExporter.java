@@ -13,6 +13,7 @@ public final class CsvExporter {
 
     public CsvExporter(Path outputDirectory) { this.outputDirectory = outputDirectory; }
 
+        // accepts results collection (protein + organism + mapping set)
     public void exportAll(ParseResult result) throws IOException {
         Files.createDirectories(outputDirectory);
         CsvGenerator.export(outputDirectory.resolve("proteins.csv"),
@@ -34,6 +35,7 @@ public final class CsvExporter {
                 Arrays.asList("protein_accession", "organism_taxonomy_id"), edges, row -> row);
     }
 
+        // accepts separated collections ( protein, organisms, mappingset)
     public void exportAll(List<Protein> proteins, java.util.Set<Organism> organisms,
             Map<String, List<String>> proteinOrganismMapping) throws IOException {
         Files.createDirectories(outputDirectory);

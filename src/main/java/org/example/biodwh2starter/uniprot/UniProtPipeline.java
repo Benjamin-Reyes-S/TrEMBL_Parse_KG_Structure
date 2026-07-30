@@ -26,8 +26,11 @@ public final class UniProtPipeline {
             System.exit(2);
         }
 
+        //main block calling the XmlParser and the CsvExporter
+
         try {
             System.out.println("Parsing " + inputFile);
+        
             ParseResult result = new XmlParser().parse(inputFile);
             new CsvExporter(outputDirectory).exportAll(result);
             System.out.printf(
