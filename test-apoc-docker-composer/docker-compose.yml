@@ -1,0 +1,27 @@
+services:
+  neo4j:
+    image: neo4j:2026.06.0
+    container_name: neo4j-apoc
+    command: neo4j console
+    ports:
+      - "7475:7474"
+      - "7688:7687"
+    environment:
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-trembl-password}"
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_apoc_import_file_enabled: "true"
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ../output-csv:/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '${NEO4J_PASSWORD:-trembl-password}' 'RETURN 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
