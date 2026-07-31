@@ -16,8 +16,21 @@ import java.util.zip.GZIPInputStream;
 
 /** Streaming UniProt XML parser; it never loads the complete document in memory. */
 public final class XmlParser {
+
+    @FunctionalInterface
+    public interface EntryConsumer {
+        void accept(Entry entry) throws IOException;
+    }
+
     public ParseResult parse(Path inputFile) throws IOException, XMLStreamException {
         ParseResult result = new ParseResult();
+        parseEntries(inputFile, result::add);
+        return result;
+    }
+
+    /** Parses and releases one entry at a time instead of retaining the document. */
+    public void parseEntries(Path inputFile, EntryConsumer consumer)
+            throws IOException, XMLStreamException {
         try (InputStream input = open(inputFile)) {
             XMLInputFactory factory = XMLInputFactory.newFactory();
             factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
@@ -27,22 +40,24 @@ public final class XmlParser {
                 while (reader.hasNext()) {
                     if (reader.next() == XMLStreamConstants.START_ELEMENT
                             && "entry".equals(reader.getLocalName())) {
-                        result.add(readEntry(reader));
+                        consumer.accept(readEntry(reader));
                     }
                 }
             } finally {
                 reader.close();
             }
         }
-        return result;
     }
 
     private Entry readEntry(XMLStreamReader reader) throws XMLStreamException {
+
         String accession = null;
         String entryName = null;
         String proteinName = null;
         String sequence = null;
         List<Organism> organisms = new ArrayList<>();
+        List<Citation> citations = new ArrayList<>();
+
         while (reader.hasNext()) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
@@ -56,6 +71,9 @@ public final class XmlParser {
                 } else if ("organism".equals(element) || "organismHost".equals(element)) {
                     Organism organism = readOrganism(reader, element);
                     if (organism != null) organisms.add(organism);
+                } else if ("reference".equals(element)) {
+                    Citation citation = readCitation(reader, element);
+                    if (citation != null) citations.add(citation);
                 } else if ("sequence".equals(element)) {
                     sequence = reader.getElementText().replaceAll("\\s+", "");
                 }
@@ -66,7 +84,7 @@ public final class XmlParser {
         }
         Protein protein = accession == null ? null
                 : new Protein(accession, proteinName == null ? entryName : proteinName, sequence);
-        return new Entry(protein, organisms);
+        return new Entry(protein, organisms, citations);
     }
 
     private String readProteinName(XMLStreamReader reader) throws XMLStreamException {
@@ -106,6 +124,45 @@ public final class XmlParser {
                     && container.equals(reader.getLocalName())) break;
         }
         return taxonomyId == null ? null : new Organism(taxonomyId, scientific, common);
+    }
+
+    private Citation readCitation(XMLStreamReader reader, String container)
+            throws XMLStreamException {
+        String title = null;
+        String date = null;
+        boolean insideCitation = "citation".equals(container);
+        List<String> authors = new ArrayList<>();
+        List<String> dbReferences = new ArrayList<>();
+
+        if (insideCitation) date = reader.getAttributeValue(null, "date");
+        while (reader.hasNext()) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String element = reader.getLocalName();
+                if ("citation".equals(element)) {
+                    insideCitation = true;
+                    date = reader.getAttributeValue(null, "date");
+                } else if (insideCitation && "title".equals(element)) {
+                    title = reader.getElementText().trim();
+                } else if (insideCitation && "person".equals(element)) {
+                    String author = reader.getAttributeValue(null, "name");
+                    if (author != null) authors.add(author);
+                } else if (insideCitation && "dbReference".equals(element)) {
+                    String type = reader.getAttributeValue(null, "type");
+                    String id = reader.getAttributeValue(null, "id");
+                    if (id != null) dbReferences.add(type == null ? id : type + ":" + id);
+                }
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                String element = reader.getLocalName();
+                if ("citation".equals(element)) {
+                    insideCitation = false;
+                    if ("citation".equals(container)) break;
+                } else if (container.equals(element)) {
+                    break;
+                }
+            }
+        }
+        return title == null ? null : new Citation(title, date, authors, dbReferences);
     }
 
     private InputStream open(Path inputFile) throws IOException {

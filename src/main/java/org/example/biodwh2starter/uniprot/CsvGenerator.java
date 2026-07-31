@@ -20,7 +20,7 @@ public final class CsvGenerator {
         }
     }
 
-    private static void writeRow(BufferedWriter writer, List<String> values) throws IOException {
+    static void writeRow(BufferedWriter writer, List<String> values) throws IOException {
         for (int index = 0; index < values.size(); index++) {
             if (index > 0) writer.write(',');
             String value = values.get(index);

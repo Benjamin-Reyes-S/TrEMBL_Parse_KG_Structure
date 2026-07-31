@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Change these defaults to the paths you normally use.
-INPUT_FILE="/home/benjamin.reyes/git/TrEMBL_Parsing/uniprot_sprot.xml"
+INPUT_FILE="/home/benjamin.reyes/git/TrEMBL_Parsing/uniprot_trembl.xml.gz"
 OUTPUT_DIRECTORY="output-csv"
 
 # Optional arguments override the defaults above:
@@ -28,6 +28,9 @@ fi
 
 cd "$SCRIPT_DIRECTORY"
 ./mvnw -q -DskipTests package
-java -cp target/classes \
+java -Xms512m -Xmx6g \
+    -Djdk.xml.maxGeneralEntitySizeLimit=0 \
+    -Djdk.xml.totalEntitySizeLimit=0 \
+    -cp target/classes \
     org.example.biodwh2starter.uniprot.UniProtPipeline \
     "$INPUT_FILE" "$OUTPUT_DIRECTORY"

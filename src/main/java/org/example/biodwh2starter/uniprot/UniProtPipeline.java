@@ -31,11 +31,12 @@ public final class UniProtPipeline {
         try {
             System.out.println("Parsing " + inputFile);
         
-            ParseResult result = new XmlParser().parse(inputFile);
-            new CsvExporter(outputDirectory).exportAll(result);
+            CsvExporter.ExportStatistics statistics =
+                    new CsvExporter(outputDirectory).exportStreaming(inputFile, new XmlParser());
             System.out.printf(
-                    "Finished: %d proteins, %d organisms, CSV files written to %s%n",
-                    result.getProteins().size(), result.getOrganisms().size(), outputDirectory);
+                    "Finished: %d proteins, %d organisms, %d citations, CSV files written to %s%n",
+                    statistics.getProteins(), statistics.getOrganisms(),
+                    statistics.getCitations(), outputDirectory);
         } catch (IOException | XMLStreamException exception) {
             System.err.println("Pipeline failed: " + exception.getMessage());
             exception.printStackTrace(System.err);

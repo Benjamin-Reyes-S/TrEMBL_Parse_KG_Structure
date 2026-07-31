@@ -75,5 +75,7 @@ class XmlPipelineTest {
         assertTrue(Files.isRegularFile(output.resolve("proteins.csv")));
         assertTrue(Files.isRegularFile(output.resolve("organisms.csv")));
         assertTrue(Files.isRegularFile(output.resolve("protein_organism_mapping.csv")));
+        assertTrue(Files.isRegularFile(output.resolve("citations.csv")));
+        assertTrue(Files.isRegularFile(output.resolve("protein_citation_mapping.csv")));
     }
 }
