@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Stream the TrEMBL CSV files into Neo4j with APOC."""
 
-import base64
 import json
 import os
 import sys
@@ -12,57 +11,50 @@ import urllib.request
 NEO4J_URL = os.getenv(
     "NEO4J_URL", "http://localhost:7475/db/neo4j/tx/commit"
 )
-NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "trembl-password")
-
 IMPORTS = [
     (
         "proteins",
-        "LOAD CSV WITH HEADERS FROM 'file:///proteins.csv' AS row RETURN row LIMIT 1000",
-        "MERGE (p:Protein {accession: row.accession}) "
+        "LOAD CSV WITH HEADERS FROM 'file:///proteins.csv' AS row RETURN row",
+        "CREATE (p:Protein {accession: row.accession}) "
         "SET p.name = row.name, p.sequence = row.sequence",
     ),
     (
         "organisms",
-        "LOAD CSV WITH HEADERS FROM 'file:///organisms.csv' AS row RETURN row LIMIT 1000",
-        "MERGE (o:Organism {taxonomy_id: row.taxonomy_id}) "
+        "LOAD CSV WITH HEADERS FROM 'file:///organisms.csv' AS row RETURN row",
+        "CREATE (o:Organism {taxonomy_id: row.taxonomy_id}) "
         "SET o.scientific_name = row.scientific_name, o.common_name = row.common_name",
     ),
     (
         "citations",
-        "LOAD CSV WITH HEADERS FROM 'file:///citations.csv' AS row RETURN row LIMIT 1000",
-        "MERGE (c:Citation {title_and_date: row.title_and_date}) "
+        "LOAD CSV WITH HEADERS FROM 'file:///citations.csv' AS row RETURN row",
+        "CREATE (c:Citation {title_and_date: row.title_and_date}) "
         "SET c.authors = row.authors, c.db_references = row.db_references",
     ),
     (
         "protein-to-organism relationships",
         "LOAD CSV WITH HEADERS FROM 'file:///protein_organism_mapping.csv' AS row "
-        "RETURN row LIMIT 1000",
+        "RETURN row",
         "MATCH (p:Protein {accession: row.protein_accession}) "
         "MATCH (o:Organism {taxonomy_id: row.organism_taxonomy_id}) "
-        "MERGE (p)-[:MAPPED_TO]->(o)",
+        "CREATE (p)-[:MAPPED_TO]->(o)",
     ),
     (
         "protein-to-citation relationships",
         "LOAD CSV WITH HEADERS FROM 'file:///protein_citation_mapping.csv' AS row "
-        "RETURN row LIMIT 1000",
+        "RETURN row",
         "MATCH (p:Protein {accession: row.protein_accession}) "
         "MATCH (c:Citation {title_and_date: row.citation_title_and_date}) "
-        "MERGE (p)-[:MAPPED_TO]->(c)",
+        "CREATE (p)-[:MAPPED_TO]->(c)",
     ),
 ]
 
 
 def run(statement: str) -> dict:
     body = json.dumps({"statements": [{"statement": statement}]}).encode()
-    token = base64.b64encode(f"{NEO4J_USER}:{NEO4J_PASSWORD}".encode()).decode()
     request = urllib.request.Request(
         NEO4J_URL,
         data=body,
-        headers={
-            "Authorization": f"Basic {token}",
-            "Content-Type": "application/json",
-        },
+        headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(request) as response:
         result = json.load(response)
