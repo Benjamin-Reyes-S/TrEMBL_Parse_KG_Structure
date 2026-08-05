@@ -26,8 +26,14 @@ if [[ "$OUTPUT_DIRECTORY" != /* ]]; then
     OUTPUT_DIRECTORY="$(pwd)/$OUTPUT_DIRECTORY"
 fi
 
-mkdir -p "$(dirname "$INPUT_FILE")"
-wget --continue "$TREMBL_URL" --output-document="$INPUT_FILE"
+if [[ -s "$INPUT_FILE" ]]; then
+    echo "Using existing TrEMBL input: $INPUT_FILE"
+else
+    mkdir -p "$(dirname "$INPUT_FILE")"
+    echo "Downloading TrEMBL input to: $INPUT_FILE"
+    wget --continue "$TREMBL_URL" --output-document="$INPUT_FILE.part"
+    mv "$INPUT_FILE.part" "$INPUT_FILE"
+fi
 
 cd "$SCRIPT_DIRECTORY"
 ./mvnw -q -DskipTests package

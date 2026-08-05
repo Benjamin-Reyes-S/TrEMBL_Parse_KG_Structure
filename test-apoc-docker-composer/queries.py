@@ -14,19 +14,19 @@ NEO4J_URL = os.getenv(
 IMPORTS = [
     (
         "proteins",
-        "LOAD CSV WITH HEADERS FROM 'file:///proteins.csv' AS row RETURN row",
+        "LOAD CSV WITH HEADERS FROM 'file:///proteins.csv' AS row SKIP $count RETURN row",
         "CREATE (p:Protein {accession: row.accession}) "
         "SET p.name = row.name, p.sequence = row.sequence",
     ),
     (
         "organisms",
-        "LOAD CSV WITH HEADERS FROM 'file:///organisms.csv' AS row RETURN row",
+        "LOAD CSV WITH HEADERS FROM 'file:///organisms.csv' AS row SKIP $count RETURN row",
         "CREATE (o:Organism {taxonomy_id: row.taxonomy_id}) "
         "SET o.scientific_name = row.scientific_name, o.common_name = row.common_name",
     ),
     (
         "citations",
-        "LOAD CSV WITH HEADERS FROM 'file:///citations.csv' AS row RETURN row",
+        "LOAD CSV WITH HEADERS FROM 'file:///citations.csv' AS row SKIP $count RETURN row",
         "CREATE (c:Citation {title_and_date: row.title_and_date}) "
         "SET c.authors = row.authors, c.db_references = row.db_references",
     ),
@@ -49,8 +49,8 @@ IMPORTS = [
 ]
 
 
-def run(statement: str) -> dict:
-    body = json.dumps({"statements": [{"statement": statement}]}).encode()
+def run(statement: str, count = 0) -> dict:
+    body = json.dumps({"statements": [{"statement": statement, "parameters": {"count": count}}]}).encode()
     request = urllib.request.Request(
         NEO4J_URL,
         data=body,
@@ -73,14 +73,24 @@ def main() -> None:
 
     for name, source, action in IMPORTS:
         print(f"Importing {name}...", flush=True)
+        protein_count_json = run("MATCH (p:Protein) RETURN count(p) AS count")
+        protein_count = protein_count_json["results"][0]["data"][0]["row"][0]
+        print(f"  {protein_count} proteins in database", flush=True)
+        organism_count_json = run("MATCH (o:Organism) RETURN count(o) AS count")
+        organism_count = organism_count_json["results"][0]["data"][0]["row"][0]
+        print(f"  {organism_count} organisms in database", flush=True)
+        citation_count_json = run("MATCH (c:Citation) RETURN count(c) AS count")
+        citation_count = citation_count_json["results"][0]["data"][0]["row"][0]
+        print(f"  {citation_count} citations in database", flush=True)
+        count = protein_count if "protein" in name else organism_count if "organism" in name else citation_count
         statement = (
             "CALL apoc.periodic.iterate("
             f"{json.dumps(source)}, {json.dumps(action)}, "
-            "{batchSize: 10000, parallel: false}) "
+            "{batchSize: 10000, parallel: false, params: {count: $count}}) "
             "YIELD batches, total, failedBatches, errorMessages "
             "RETURN batches, total, failedBatches, errorMessages"
         )
-        result = run(statement)
+        result = run(statement, count = count)
         row = result["results"][0]["data"][0]["row"]
         batches, total, failed_batches, errors = row
         print(f"  {total} rows in {batches} batches", flush=True)

@@ -23,3 +23,5 @@ Thumbs.db
 *.xml
 *.csv
 /output-csv/
+/neo4j/
+/INPUT_FILE/
