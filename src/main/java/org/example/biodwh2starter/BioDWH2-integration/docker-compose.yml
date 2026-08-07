@@ -1,0 +1,56 @@
+services:
+
+  biodwh2-neo4j:
+    image: eclipse-temurin:17-jre-jammy # image for java 17 runtime enviroment
+
+    working_dir: /app 
+
+    volumes:
+      - /home/benjamin.reyes/BioDWH2/workspaces/Workspace-v0.68_Version1_KG_noTrEMBL:/workspace
+      - /home/benjamin.reyes/BioDWH2/BioDWH2_Neo4j/BioDWH2-Neo4j-Server-v1.3.2.jar:/app/biodwh2-neo4j.jar:ro
+
+    command:
+      - java
+      - -jar
+      - /app/biodwh2-neo4j.jar
+      - --create-start
+      - /workspace
+      - --port
+      - "7476"
+      - --bolt-port
+      - "7689"
+
+    ports:
+      - "127.0.0.1:7476:7476"  #security isolation: only allow access from localhost to neo4j server IPHost:localPort:DockerPort
+      - "127.0.0.1:7689:7689"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c '</dev/tcp/127.0.0.1/7689'"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+
+  trembl-importer:
+    build:
+      context: ../../../../../../..
+      dockerfile: src/main/java/org/example/biodwh2starter/BioDWH2-integration/trembl-importer/Dockerfile
+
+    environment:
+      NEO4J_URI: bolt://biodwh2-neo4j:7689
+      CSV_INPUT_DIRECTORY: /input
+      IMPORT_BATCH_SIZE: "1000"
+
+    depends_on:
+      biodwh2-neo4j:
+        condition: service_healthy
+
+    volumes:
+      - /home/benjamin.reyes/TrEMBL_Parse_KG_Structure/output-csv:/input:ro
+
+    profiles:
+      - import

@@ -1,9 +1,9 @@
 set -euo pipefail
 
+#take remaining docker open down
+docker compose down -v
 
-WORKSPACE= "/home/benjamin.reyes/TrEMBL_Parse_KG_Structure/workspace"
-NEO4J_SEVER= "/home/benjamin.reyes/TrEMBL_Parse_KG_Structure/neo4j_server/BioDWH2-Neo4j-Server-v${NEO4J_VERSION}.jar"
-
-NEO4J_VERSION="v${1:1.3.2}.jar"
-
-java -jar "$NEO4J_SEVER" --start "$WORKSPACE"  -p 7476 -bp 7689
+#start docker compose for neo4j server
+docker compose up -d --wait biodwh2-neo4j
+#start docker compose for trembl integration
+docker compose --profile import run --rm trembl-importer
