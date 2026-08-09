@@ -11,7 +11,7 @@ public final class Citation {
     private final String date;
     private final List<String> authorList;
     private final List<String> dbReferences;
-
+    
     public Citation(String title, String date, List<String> authorList,
             List<String> dbReferences) {
         this.title = Objects.requireNonNull(title, "title");
