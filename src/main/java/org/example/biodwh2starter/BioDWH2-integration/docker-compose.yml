@@ -6,14 +6,14 @@ services:
     working_dir: /app 
 
     volumes:
-      - /home/benjamin.reyes/BioDWH2/workspaces/Workspace-v0.68_Version1_KG_noTrEMBL:/workspace
+      - /home/benjamin.reyes/BioDWH2/workspaces/no_TrEMBL_test:/workspace
       - /home/benjamin.reyes/BioDWH2/BioDWH2_Neo4j/BioDWH2-Neo4j-Server-v1.3.2.jar:/app/biodwh2-neo4j.jar:ro
 
     command:
       - java
       - -jar
       - /app/biodwh2-neo4j.jar
-      - --create-start
+      - --start
       - /workspace
       - --port
       - "7476"
@@ -32,7 +32,9 @@ services:
         ]
       interval: 5s
       timeout: 3s
-      retries: 30
+      #Implemented for 1 run{database-health-startup-allowance}
+      start_period: 5m
+      retries: 120
 
 
   trembl-importer:

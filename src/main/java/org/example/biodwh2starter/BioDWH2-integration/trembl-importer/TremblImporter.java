@@ -15,13 +15,15 @@ public final class TremblImporter {
             run(driver,input,size);}}
 
 
- static void run(Driver driver,Path input,int size)throws Exception{Map<EntityType,LinkedHashMap<String,String>> maps=new ConceptNodeIndex(driver).loadAll();
+ static void run(Driver driver,Path input,int size)throws Exception{// #Implemented for 1 run{merge-property-indexes}
+    new Neo4jSchemaInitializer(driver).ensureMergeIndexes();
+    Map<EntityType,LinkedHashMap<String,Long>> maps=new ConceptNodeIndex(driver).loadAll();
     // the concept node indexing should be made in the list of the BioDWH2 nodes, not from csv
     for(EntityType type:EntityType.values())System.out.printf("Found %,d existing %s concept identifiers%n",maps.get(type).size(),type);
         // process entries (nodes)
         CsvEntityProcessor processor=new CsvEntityProcessor(driver,size);
-        processor.process(EntityType.ORGANISM.fileIn(input),EntityType.ORGANISM,maps.get(EntityType.ORGANISM));
-        processor.process(EntityType.PROTEIN.fileIn(input),EntityType.PROTEIN,maps.get(EntityType.PROTEIN));
+        processor.process(EntityType.ORGANISM.fileIn(input),EntityType.ORGANISM,maps.get(EntityType.ORGANISM),"NCBITaxon:");
+        processor.process(EntityType.PROTEIN.fileIn(input),EntityType.PROTEIN,maps.get(EntityType.PROTEIN),"UniProtKB:");
         //process relationships (edges)
         new CsvRelationshipProcessor(driver,size).processProteinOrganisms(input.resolve("protein_organism_mapping.csv"));}
 

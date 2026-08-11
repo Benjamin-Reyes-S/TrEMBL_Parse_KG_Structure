@@ -8,4 +8,4 @@ FROM eclipse-temurin:11-jre-jammy
 WORKDIR /app
 COPY --from=build /build/target/*-SNAPSHOT.jar /app/trembl-importer.jar
 COPY --from=build /build/target/lib /app/lib
-ENTRYPOINT ["java","-cp","/app/trembl-importer.jar:/app/lib/*","org.example.biodwh2starter.integration.TremblImporter"]
+ENTRYPOINT ["java","-Xmx15g","-cp","/app/trembl-importer.jar:/app/lib/*","org.example.biodwh2starter.integration.TremblImporter"]
