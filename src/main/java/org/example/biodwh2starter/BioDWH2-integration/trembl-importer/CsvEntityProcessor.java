@@ -54,6 +54,6 @@ public final class CsvEntityProcessor {
             s.writeTransaction(tx->{
                 if(!oldRows.isEmpty())tx.run(existing(type),parameters("rows",oldRows)).consume();
                 if(!newRows.isEmpty())for(Record r:tx.run(missing(type),parameters("rows",newRows)).list())concepts.put(r.get("identifier").asString(),r.get("conceptId").asLong());return null;});}}
- private static String existing(EntityType t){return "UNWIND $rows AS row MERGE (s:`"+t.sourceLabel()+"` {`"+t.identifierColumn()+"`:row.identifier}) SET s += row.properties MATCH (c:`"+t.conceptLabel()+"`) WHERE id(c)=row.conceptId MERGE (s)-[:MAPPED_TO]->(c)";}
- private static String missing(EntityType t){return "UNWIND $rows AS row MERGE (s:`"+t.sourceLabel()+"` {`"+t.identifierColumn()+"`:row.identifier}) SET s += row.properties CREATE (c:`"+t.conceptLabel()+"` {ids:[row.conceptIdentifier],names:CASE WHEN row.name IS NULL THEN [] ELSE [row.name] END,__mapped:true}) MERGE (s)-[:MAPPED_TO]->(c) RETURN row.conceptIdentifier AS identifier,id(c) AS conceptId";}
+ private static String existing(EntityType t){return "UNWIND $rows AS row MERGE (s:`"+t.sourceLabel()+"` {`"+t.identifierColumn()+"`:row.identifier}) SET s += row.properties WITH row, s MATCH (c:`"+t.conceptLabel()+"`) WHERE id(c)=row.conceptId MERGE (s)-[:MAPPED_TO]->(c)";}
+ private static String missing(EntityType t){return "UNWIND $rows AS row MERGE (s:`"+t.sourceLabel()+"` {`"+t.identifierColumn()+"`:row.identifier}) SET s += row.properties WITH row, s CREATE (c:`"+t.conceptLabel()+"` {ids:[row.conceptIdentifier],names:CASE WHEN row.name IS NULL THEN [] ELSE [row.name] END,__mapped:true}) MERGE (s)-[:MAPPED_TO]->(c) RETURN row.conceptIdentifier AS identifier,id(c) AS conceptId";}
 }
