@@ -14,8 +14,10 @@ public final class CsvEntityProcessor {
  private final Driver driver;
  private final int batchSize;
  public CsvEntityProcessor(Driver d,int size){if(size<1)throw new IllegalArgumentException("batch size must be positive");
- driver=d;batchSize=size;}
+    driver=d;
+    batchSize=size;}
 
+ // process(csv file path, EntityType object, Map<EntityType Object, LinkedHashMap<accession, neo4jid>, prefix for conceptIdentifier)
  public long process(Path file,EntityType type,LinkedHashMap<String,Long> concepts,String prefix)throws IOException{
   if(!Files.isRegularFile(file))throw new IOException("Missing CSV: "+file);
   long count=0;

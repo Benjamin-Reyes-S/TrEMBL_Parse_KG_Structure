@@ -16,16 +16,18 @@ public final class TremblImporter {
 
 
  static void run(Driver driver,Path input,int size)throws Exception{// #Implemented for 1 run{merge-property-indexes}
+    //indexing from neo4j
     new Neo4jSchemaInitializer(driver).ensureMergeIndexes();
+    //generate map of maps for each EntityType (PROTEIN, TAXON) with key=accession and value=neo4j id
     Map<EntityType,LinkedHashMap<String,Long>> maps=new ConceptNodeIndex(driver).loadAll();
-    // the concept node indexing should be made in the list of the BioDWH2 nodes, not from csv
     for(EntityType type:EntityType.values())System.out.printf("Found %,d existing %s concept identifiers%n",maps.get(type).size(),type);
-        // process entries (nodes)
-        CsvEntityProcessor processor=new CsvEntityProcessor(driver,size);
-        processor.process(EntityType.ORGANISM.fileIn(input),EntityType.ORGANISM,maps.get(EntityType.ORGANISM),"NCBITaxon:");
-        processor.process(EntityType.PROTEIN.fileIn(input),EntityType.PROTEIN,maps.get(EntityType.PROTEIN),"UniProtKB:");
-        //process relationships (edges)
-        new CsvRelationshipProcessor(driver,size).processProteinOrganisms(input.resolve("protein_organism_mapping.csv"));}
+    // introduce nodes from csv files into neo4j database (use driver to keep connection to server)
+    CsvEntityProcessor processor=new CsvEntityProcessor(driver,size);
+    //process(EntityType.NAME.fileIn(csv input), EntityType.NAME, Map<EntityType Object, LinkedHashMap<accession, neo4jid>>)
+    processor.process(EntityType.ORGANISM.fileIn(input),EntityType.ORGANISM,maps.get(EntityType.ORGANISM),"NCBITaxon:");
+    processor.process(EntityType.PROTEIN.fileIn(input),EntityType.PROTEIN,maps.get(EntityType.PROTEIN),"UniProtKB:");
+    //process relationships (edges)
+    new CsvRelationshipProcessor(driver,size).processProteinOrganisms(input.resolve("protein_organism_mapping.csv"));}
 
  private static String env(String key,String fallback){String value=System.getenv(key);return value==null||value.trim().isEmpty()?fallback:value.trim();}
 }

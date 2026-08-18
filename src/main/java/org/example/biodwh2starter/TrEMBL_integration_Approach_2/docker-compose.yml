@@ -1,0 +1,71 @@
+services:
+
+  biodwh2-neo4j:
+    image: eclipse-temurin:17-jre-jammy # image for java 17 runtime enviroment
+
+    working_dir: /app 
+
+    volumes:
+      - /home/benjamin.reyes/BioDWH2/workspaces/no_TrEMBL:/workspace
+      - /home/benjamin.reyes/BioDWH2/BioDWH2_Neo4j/BioDWH2-Neo4j-Server-v1.3.2.jar:/app/biodwh2-neo4j.jar:ro
+      - /home/benjamin.reyes/TrEMBL_Parse_KG_Structure/output-csv:/workspace/neo4j/import:ro
+
+    command:
+      - java
+      - -Xmx6g
+      - -Xms4g
+      - -jar
+      - /app/biodwh2-neo4j.jar
+      - --start
+      - /workspace
+      - --port
+      - "7479"
+      - --bolt-port
+      - "7690"
+
+    mem_limit: "10g"
+
+    ports:
+      - "172.31.151.160:7479:7479"
+      - "172.31.151.160:7690:7690"
+
+    environment:
+      NEO4J_AUTH: none
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_apoc_import_file_enabled: "true"
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+      NEO4J_dbms_memory_pagecache_size: "3g"
+
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c '</dev/tcp/127.0.0.1/7690'"
+        ]
+      interval: 5s
+      timeout: 3s
+      #Implemented for 1 run{database-health-startup-allowance}
+      start_period: 5m
+      retries: 120
+
+
+  trembl-importer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    environment:
+      NEO4J_URL: http://biodwh2-neo4j:7479/db/neo4j/tx/commit
+      CSV_INPUT_DIRECTORY: /input
+      IMPORT_BATCH_SIZE: "1000"
+
+    depends_on:
+      biodwh2-neo4j:
+        condition: service_healthy
+
+    volumes:
+      - /home/benjamin.reyes/TrEMBL_Parse_KG_Structure/output-csv:/input:ro
+
+    profiles:
+      - import

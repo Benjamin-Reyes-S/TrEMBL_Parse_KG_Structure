@@ -1,6 +1,8 @@
 package org.example.biodwh2starter.integration;
 import java.nio.file.Path;
 import java.util.*;
+
+//Entity that already match the source node (csv), concept node (neo4j) and desribe the properties of the source node (csv)
 public enum EntityType {
     
  PROTEIN("proteins.csv","TrEMBL_Protein","PROTEIN","accession","name",Arrays.asList("accession","name","sequence")),
